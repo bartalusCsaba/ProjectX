@@ -8,8 +8,16 @@
     "noUncheckedIndexedAccess": true, // list[0] is "value or undefined", like getOrNull(0)
     "noEmit": true,                   // only check for errors, write no output files
     "skipLibCheck": true,             // don't re-check the type files inside node_modules
-    "moduleDetection": "force"        // treat every file as module
+    "moduleDetection": "force",       // treat every file as module
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
 
-  "include": ["src/**/*.ts", "tests/**/*.ts"] // your source sets: every .ts file under src and tests
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "node_modules/vitest/globals.d.ts"
+  ]
+  // your source sets: every .ts file under src and tests
 }

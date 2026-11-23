@@ -1,4 +1,5 @@
 import {greet} from "./hello";
+import {queryTerms} from "./application/retrieval/query-terms";
 
 
-console.log(greet("Csaba"));
+console.log(queryTerms(`leave leave LEAVE`));

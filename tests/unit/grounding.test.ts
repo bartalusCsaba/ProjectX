@@ -1,9 +1,12 @@
 import {it, describe, expect} from "vitest";
 import {checkCitations} from "@/application/agent/sources";
+import {type SearchHit} from "@/domain/types";
+import {SourceRegistry} from "@/application/agent/source-registry";
 
 describe("Grounding Report", () => {
-  it('should return uncited', () => {
+  it('does not flag an empty answer as uncited', () => {
     expect(checkCitations("", new Set([]))).toEqual({valid: [], unknown: [], uncited: false});
+    expect(checkCitations("        ", new Set([]))).toEqual({valid: [], unknown: [], uncited: false});
   });
 
   it('should return uncited true', () => {
@@ -39,8 +42,52 @@ describe("Grounding Report", () => {
   it('should return one valid citations', () => {
     expect(checkCitations("Something has citations but not valid [S1][S1]", new Set(["S1"]))).toEqual({valid: ["S1"], unknown: [], uncited: false});
   });
+})
 
-  it('should return uncited for not empty whitespace text', () => {
-    expect(checkCitations("        ", new Set([]))).toEqual({valid: [], unknown: [], uncited: false});
+
+
+const aHit = (id: string): SearchHit => ({
+  chunk: {
+    id,
+    documentId: "doc-1",
+    ordinal: 0,
+    content: `Content of ${id}`,
+    headingPath: ["Leave"],
+    estimatedToken: 5,
+  },
+  score: 1,
+  sources: ["vector"],
+  documentTitle: "Handbook",
+});
+
+describe('Source Registry', () => {
+  it("assigns labels in order and reuses the label of a known chunk", () => {
+    const registry = new SourceRegistry();
+
+    expect(registry.register(aHit("a")).label).toBe("S1");
+    expect(registry.register(aHit("b")).label).toBe("S2");
+    expect(registry.register(aHit("a")).label).toBe("S1");
   });
+
+  it("finds a source by its label, ignoring case and spaces", () => {
+    const registry = new SourceRegistry();
+    registry.register(aHit("a"));
+    registry.register(aHit("b"));
+
+    expect(registry.get("S2")?.chunkId).toBe("b");
+    expect(registry.get(" s2")?.chunkId).toBe("b");
+  });
+
+  it('lists all sources in the order they were registered ', () => {
+    const registry = new SourceRegistry();
+    registry.register(aHit("a"));
+    registry.register(aHit("b"));
+
+    expect(registry.all().map((reference) => reference.label)).toEqual(["S1", "S2"]);
+  });
+
+  it("returns undefined for a label that was never assigned", () => {
+    const registry = new SourceRegistry();
+    expect(registry.get("S9")).toBeUndefined();
+  })
 })
